@@ -1,6 +1,18 @@
 # demo
 alias trtexec=/usr/src/tensorrt/bin/trtexec
 
+* gn
 trtexec --onnx=model_gn.onnx --shapes=input:32x3x32x32 --saveEngine=model_gn.engine --exportProfile=model_gn.json --int8 --useDLACore=0 --allowGPUFallback --useSpinWait --separateProfileRun > model_gn.log
 
-trtexec --onnx=data/model_bn.onnx --shapes=input:32x3x32x32 --saveEngine=model_bn.engine --exportProfile=model_bn.json --int8 --useDLACore=0 --allowGPUFallback --useSpinWait --separateProfileRun > model_bn.log
+nsys profile --trace=cuda,nvtx,cublas,cudla,cusparse,cudnn,nvmedia --output=model_gn.nvvp /usr/src/tensorrt/bin/trtexec --loadEngine=model_gn.engine --iterations=10 --idleTime=500 --duration=0 --useSpinWait
+
+* bn
+trtexec --onnx=model_bn.onnx --shapes=input:32x3x32x32 --saveEngine=model_bn.engine --exportProfile=model_bn.json --int8 --useDLACore=0 --allowGPUFallback --useSpinWait --separateProfileRun > model_bn.log
+
+nsys profile --trace=cuda,nvtx,cublas,cudla,cusparse,cudnn,nvmedia --output=model_bn.nvvp /usr/src/tensorrt/bin/trtexec --loadEngine=model_bn.engine --iterations=10 --idleTime=500 --duration=0 --useSpinWait
+
+* quickstart
+python3 train.py model_bn --checkpoint_path=data/model_bn.pth
+python3 export.py model_bn data/model_bn.onnx --checkpoint_path=data/model_bn.pth
+python3 build.py data/model_bn.onnx --output=data/model_bn.engine --int8 --dla_core=0 --gpu_fallback --batch_size=32
+python3 eval.py data/model_bn.engine --batch_size=32

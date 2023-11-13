@@ -10,3 +10,5 @@ data
 *.json
 
 *.engine
+
+*.nsys-rep
